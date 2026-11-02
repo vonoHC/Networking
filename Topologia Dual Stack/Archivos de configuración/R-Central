@@ -1,1 +1,167 @@
-
+! Last configuration change at 04:39:17 UTC Mon Nov 2 2026
+!
+version 15.9
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R-Central
+!
+boot-start-marker
+boot-end-marker
+!
+no aaa new-model
+!
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+ip dhcp excluded-address 192.168.28.1 192.168.28.20
+ip dhcp excluded-address 192.168.29.1 192.168.29.20
+ip dhcp excluded-address 192.168.30.1 192.168.30.20
+ip dhcp excluded-address 192.168.31.1 192.168.31.20
+ip dhcp excluded-address 192.168.32.1 192.168.32.20
+ip dhcp excluded-address 192.168.33.1 192.168.33.20
+!
+ip dhcp pool LAN-Miami
+ network 192.168.28.0 255.255.255.0
+ default-router 192.168.28.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip dhcp pool LAN-Washington
+ network 192.168.29.0 255.255.255.0
+ default-router 192.168.29.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip dhcp pool LAN-Boston
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip dhcp pool LAN-Missouri
+ network 192.168.31.0 255.255.255.0
+ default-router 192.168.31.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip dhcp pool LAN-Chicago
+ network 192.168.32.0 255.255.255.0
+ default-router 192.168.32.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip dhcp pool LAN-California
+ network 192.168.33.0 255.255.255.0
+ default-router 192.168.33.1
+ dns-server 8.8.8.8
+ domain-name pnetlab.local
+!
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+ipv6 dhcp pool LAN-Miami
+ address prefix 2001:db8:100:30::/64
+ domain-name pnetlab.local
+!
+ipv6 dhcp pool LAN-Washington
+ address prefix 2001:db8:100:31::/64
+ domain-name pnetlab.local
+!
+ipv6 dhcp pool LAN-Boston
+ address prefix 2001:db8:100:32::/64
+ domain-name pnetlab.local
+!
+ipv6 dhcp pool LAN-Missouri
+ address prefix 2001:db8:100:33::/64
+ domain-name pnetlab.local
+!
+ipv6 dhcp pool LAN-Chicago
+ address prefix 2001:db8:100:34::/64
+ domain-name pnetlab.local
+!
+ipv6 dhcp pool LAN-California
+ address prefix 2001:db8:100:35::/64
+ domain-name pnetlab.local
+!
+multilink bundle-name authenticated
+!
+redundancy
+!
+interface GigabitEthernet0/0
+ description Conexion a Internet
+ ip address dhcp
+ ip nat outside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+ media-type rj45
+!
+interface GigabitEthernet0/1
+ description Conexion a R-Miami
+ ip address 10.0.28.1 255.255.255.252
+ ip nat inside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+ media-type rj45
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:100:36::1/64
+ ipv6 ospf 1 area 0
+!
+interface GigabitEthernet0/2
+ description Conexion R-California
+ ip address 10.0.28.5 255.255.255.252
+ ip nat inside
+ ip virtual-reassembly in
+ duplex auto
+ speed auto
+ media-type rj45
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:100:37::1/64
+ ipv6 ospf 1 area 0
+!
+interface GigabitEthernet0/3
+ no ip address
+ shutdown
+ duplex auto
+ speed auto
+ media-type rj45
+!
+router ospf 1
+ router-id 1.1.1.1
+ network 10.0.28.0 0.0.0.3 area 0
+ network 10.0.28.4 0.0.0.3 area 0
+ default-information originate always
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip nat inside source list 1 interface GigabitEthernet0/0 overload
+!
+ipv6 router ospf 1
+ router-id 1.1.1.1
+ default-information originate always
+!
+ipv6 ioam timestamp
+!
+access-list 1 permit 192.168.28.0 0.0.0.255
+access-list 1 permit 192.168.29.0 0.0.0.255
+access-list 1 permit 192.168.30.0 0.0.0.255
+access-list 1 permit 192.168.31.0 0.0.0.255
+access-list 1 permit 192.168.32.0 0.0.0.255
+access-list 1 permit 192.168.33.0 0.0.0.255
+access-list 1 permit 10.0.28.0 0.0.0.3
+access-list 1 permit 10.0.28.4 0.0.0.3
+access-list 1 permit 10.0.28.8 0.0.0.3
+access-list 1 permit 10.0.28.12 0.0.0.3
+access-list 1 permit 10.0.28.16 0.0.0.3
+access-list 1 permit 10.0.28.20 0.0.0.3
+access-list 1 permit 10.0.28.24 0.0.0.3
+access-list 1 permit 10.0.28.28 0.0.0.3
+!
+control-plane
