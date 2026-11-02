@@ -14,6 +14,12 @@ boot-end-marker
 !
 no aaa new-model
 !
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+ip cef
 ipv6 unicast-routing
 ipv6 cef
 !
