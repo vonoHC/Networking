@@ -12,7 +12,6 @@ En este laboratorio se montó, en **PNET Lab** sobre **VMware**, una red de **7 
 ![DHCP](https://img.shields.io/badge/DHCPv4%20%7C%20DHCPv6-Servicios-F57C00?style=for-the-badge)
 ![NAT](https://img.shields.io/badge/PAT-NAT_Overload-C62828?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Debian](https://img.shields.io/badge/Debian-A81D33?style=for-the-badge&logo=debian&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
 ## 📑 Contenido
