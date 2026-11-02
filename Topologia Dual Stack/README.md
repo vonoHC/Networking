@@ -1,6 +1,6 @@
 # 🌐 Laboratorio Dual Stack (IPv4 + IPv6) con OSPFv2 y OSPFv3
 
-En este laboratorio se montó, en **PNET Lab** sobre **VMware**, una red de **7 routers** en la que IPv4 e IPv6 conviven (*dual stack*). Primero se segmentó la red con subnetting, después se habilitó el enrutamiento dinámico con **OSPFv2** y **OSPFv3**, y por último se centralizaron en `R-Central` los servicios de **DHCP** y la salida a Internet, que usa **PAT** para que las redes internas puedan alcanzar destinos IPv4 externos.
+En este laboratorio se montó, en **PNET Lab** sobre **VMware**, una red de **7 routers** en la que IPv4 e IPv6 conviven (*dual stack*). Primero se segmentó la red con subnetting, después se habilitó el enrutamiento dinámico con **OSPFv2** y **OSPFv3**, y por último se centralizaron en `R-Central` los servicios de **DHCP** y la salida a Internet, que se obtiene de la red NAT de PNET Lab y usa **PAT** para que las redes internas puedan alcanzar destinos IPv4 externos.
 
 ## 🛠️ Tecnologías utilizadas
 
@@ -22,8 +22,7 @@ En este laboratorio se montó, en **PNET Lab** sobre **VMware**, una red de **7 
 3. [Plan de direccionamiento](#-plan-de-direccionamiento)
 4. [Desarrollo de la práctica](#-desarrollo-de-la-práctica)
 5. [Verificación](#-verificación)
-6. [Observaciones y mejoras pendientes](#-observaciones-y-mejoras-pendientes)
-7. [Conclusiones](#-conclusiones)
+6. [Conclusiones](#-conclusiones)
 
 ## 🎯 Objetivos
 
@@ -33,14 +32,14 @@ Con esta práctica se buscaba lograr lo siguiente:
 - Segmentar la red con **subnetting**: LANs /24 (IPv4) y /64 (IPv6), y enlaces entre routers /30 con su /64 IPv6.
 - Enrutar con **OSPFv2** (IPv4) y **OSPFv3** (IPv6) entre los 7 routers.
 - Centralizar **DHCPv4 y DHCPv6** en `R-Central`.
-- Dar salida a redes IPv4 externas mediante **PAT** en `R-Central`.
+- Dar salida a redes IPv4 externas mediante **PAT** en `R-Central`, usando la red NAT de PNET Lab como enlace a Internet y dejando la interfaz de salida como cliente DHCP.
 - Preparar hosts Linux capaces de obtener direccionamiento IPv6 con `dhcpcd`.
 
-## 🗺️ Topología
+## 🗺 Topología
 
 ![Topología Dual Stack](https://raw.githubusercontent.com/vonoHC/Networking/main/Topologia%20Dual%20Stack/imagenes/Topologia.png)
 
-La red gira alrededor de `R-Central`, el único router con salida a Internet. A partir de él se fueron conectando los demás routers formando un anillo, y cada uno atiende una LAN con su switch y su cliente.
+La red gira alrededor de `R-Central`, el único router con salida a Internet, que obtiene a través de la red NAT de PNET Lab. A partir de él se fueron conectando los demás routers formando un anillo, y cada uno atiende una LAN con su switch y su cliente.
 
 | Router | Router-ID OSPF | LAN que atiende |
 |---|---|---|
@@ -91,14 +90,14 @@ Antes de configurar cualquier equipo se definió el plan de direccionamiento. Pr
 
    ![Direcciones excluidas del DHCPv4](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/DHCPv4%20excluded.png)
 
-4. **Se crearon los pools DHCPv4.** Con las exclusiones listas, se creó un pool por LAN con `ip dhcp pool LAN-Miami` y, dentro de él, `network 192.168.28.0 255.255.255.0`, `default-router 192.168.28.1`, `dns-server 8.8.8.8` y `domain-name pnetlab.local`. Luego se repitió el proceso para Washington, Boston, Missouri, Chicago y California con sus redes y gateways. En la captura se ve un pequeño tropiezo: al configurar el pool de Boston se escribió `domainname` en lugar de `domain-name`, y se corrigió en el siguiente comando.
+4. **Se crearon los pools DHCPv4.** Con las exclusiones listas, se creó un pool por LAN con `ip dhcp pool LAN-Miami` y, dentro de él, `network 192.168.28.0 255.255.255.0`, `default-router 192.168.28.1`, `dns-server 8.8.8.8` y `domain-name pnetlab.local`. Luego se repitió el proceso para Washington, Boston, Missouri, Chicago y California con sus redes y gateways.
 
    ![Pools DHCPv4](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/DHCPv4%20pools.png)
 
-5. **Se crearon los pools DHCPv6.** Para IPv6 se hizo algo parecido: se creó un pool por LAN con `ipv6 dhcp pool LAN-Miami` y se le asignó `domain-name pnetlab.local`, repitiéndolo para Washington, Boston, Missouri, Chicago y California. Las direcciones IPv6 de los clientes se obtienen a partir de los Router Advertisement de cada LAN; los ajustes pendientes de estos pools están en la sección de observaciones.
-   ![Pools DHCPv6](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/DHCPv6%20pools.png)
+5. **Se crearon los pools DHCPv6.** Para IPv6 se hizo algo parecido: se creó un pool por LAN con `ipv6 dhcp pool LAN-Miami` y se le asignó `domain-name pnetlab.local`, repitiéndolo para Washington, Boston, Missouri, Chicago y California. Las direcciones IPv6 de los clientes se obtienen a partir de los Router Advertisement de cada LAN.
+    ![Pools DHCPv6](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/DHCPv6%20pools.png)
 
-7. **Se configuró PAT en R-Central.** Con DHCP resuelto, se preparó la salida a Internet. Primero se definió la ACL estándar que identifica el tráfico a traducir, con `access-list 1 permit 192.168.28.0 0.0.0.255` para cada LAN (hasta la red 192.168.33.0) y `access-list 1 permit 10.0.28.0 0.0.0.3` para los enlaces /30 desde `10.0.28.0` hasta `10.0.28.24`. Luego se aplicó la traducción con `ip nat inside source list 1 interface g0/0 overload`; en un primer intento se había escrito sin `overload`, así que se eliminó con el prefijo `no` y se aplicó de nuevo con la opción correcta. Por último se marcaron las interfaces: `ip nat inside` en `g0/1` y `g0/2`, y `ip nat outside` en `g0/0`, que es la salida hacia Internet.
+7. **Se configuró la salida a Internet con PAT en R-Central.** Para dar Internet a toda la topología se usó la red NAT de PNET Lab, a la que se conectó la interfaz `g0/0` de `R-Central`. Como esa red entrega direccionamiento por DHCP, la interfaz se configuró como cliente DHCP con `ip address dhcp`, de modo que el router obtiene su dirección y su salida de forma automática. Con eso listo, se preparó el PAT. Primero se definió la ACL estándar que identifica el tráfico a traducir, con `access-list 1 permit 192.168.28.0 0.0.0.255` para cada LAN (hasta la red 192.168.33.0) y `access-list 1 permit 10.0.28.0 0.0.0.3` para los enlaces /30 desde `10.0.28.0` hasta `10.0.28.24`. Luego se aplicó la traducción con `ip nat inside source list 1 interface g0/0 overload`. Por último se marcaron las interfaces: `ip nat inside` en `g0/1` y `g0/2`, y `ip nat outside` en `g0/0`, que es la salida hacia Internet.
 
    ![Configuración de NAT](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/Conf%20nat.png)
 
@@ -115,7 +114,7 @@ Antes de configurar cualquier equipo se definió el plan de direccionamiento. Pr
 
 Una vez configurado todo, se revisó que la red se comportara como se esperaba, empezando por las tablas de enrutamiento de `R-Central` y terminando con una prueba hacia Internet.
 
-9. **Se revisaron las rutas OSPFv2.** En `R-Central` se ejecutó `show ip route ospf`. La tabla muestra la ruta por defecto (*gateway of last resort*) hacia `10.0.137.1` y 12 rutas aprendidas por OSPF: las 6 LANs y 6 enlaces punto a punto. Las redes `10.0.28.24/30` y `10.0.28.28/30` se alcanzan por dos caminos de igual costo (`Gi0/1` y `Gi0/2`), por lo que OSPF balancea la carga entre ambos.
+9. **Se revisaron las rutas OSPFv2.** En `R-Central` se ejecutó `show ip route ospf`. La tabla muestra la ruta por defecto (*gateway of last resort*) hacia `10.0.137.1`, el gateway de la red NAT, y 12 rutas aprendidas por OSPF: las 6 LANs y 6 enlaces punto a punto. Las redes `10.0.28.24/30` y `10.0.28.28/30` se alcanzan por dos caminos de igual costo (`Gi0/1` y `Gi0/2`), por lo que OSPF balancea la carga entre ambos.
 
    ![Rutas OSPFv2](https://github.com/vonoHC/Networking/blob/main/Topologia%20Dual%20Stack/imagenes/Rutas%20OSPFv2.png)
 
@@ -129,7 +128,7 @@ Una vez configurado todo, se revisó que la red se comportara como se esperaba, 
 
 ## 📌 Conclusiones
 
-Al final, la topología dual stack quedó operativa: los 7 routers intercambian rutas IPv4 e IPv6 mediante OSPFv2 y OSPFv3. El subnetting permitió ordenar la red con un plan de direccionamiento consistente entre ambas pilas (por ejemplo, el enlace `10.0.28.24/30` corresponde a `2001:DB8:100:42::/64`). Centralizar el DHCP en `R-Central` simplificó la administración, y el PAT dio salida a redes IPv4 externas a todas las LANs a través de una sola interfaz, `g0/0`. Por último, instalar `dhcpcd` en la imagen de los hosts fue necesario para que los clientes Linux obtuvieran direccionamiento IPv6.
+Al final, la topología dual stack quedó operativa: los 7 routers intercambian rutas IPv4 e IPv6 mediante OSPFv2 y OSPFv3. El subnetting permitió ordenar la red con un plan de direccionamiento consistente entre ambas pilas (por ejemplo, el enlace `10.0.28.24/30` corresponde a `2001:DB8:100:42::/64`). Centralizar el DHCP en `R-Central` simplificó la administración, y el PAT dio salida a redes IPv4 externas a todas las LANs a través de una sola interfaz, `g0/0`, conectada a la red NAT de PNET Lab y configurada como cliente DHCP. Por último, instalar `dhcpcd` en la imagen de los hosts fue necesario para que los clientes Linux obtuvieran direccionamiento IPv6.
 
 ## 📁 Estructura del repositorio
 
