@@ -79,12 +79,11 @@ Antes de configurar cualquier equipo se definió el plan de direccionamiento. Pr
 | R-Boston ↔ R-Missouri | Gi0/1 ↔ Gi0/1 | 10.0.28.24/30 | 2001:DB8:100:42::/64 |
 | R-Washington ↔ R-Chicago | Gi0/1 ↔ Gi0/1 | 10.0.28.28/30 | 2001:DB8:100:43::/64 |
 
-## 🧪 Desarrollo de la práctica
+## 🔬 Desarrollo de la práctica
 
 1. **Se planificó la segmentación.** Lo primero fue el subnetting: a cada LAN se le asignó un /24 IPv4 y un /64 IPv6, y el bloque `10.0.28.0` se dividió en subredes /30, cada una con su /64 IPv6, para los 8 enlaces entre routers. El resultado es el plan de direccionamiento que se vio arriba.
 
 2. **Se habilitó el enrutamiento dinámico.** Con el direccionamiento listo, se activaron OSPFv2 y OSPFv3 en los 7 routers usando los Router-ID de la tabla de la topología, y se anunciaron tanto las LANs como los enlaces punto a punto. Más adelante, en la verificación, se comprueba que todos los routers aprendieron las rutas.
-   <!-- TODO: agregar captura y comandos de la configuración de OSPFv2/OSPFv3 -->
 
 3. **Se reservaron direcciones en el DHCPv4.** Después se pasó a los servicios DHCP, que se centralizaron en `R-Central`. Lo primero fue reservar las primeras 20 direcciones de cada LAN con `ip dhcp excluded-address 192.168.28.1 192.168.28.20`, repitiendo el comando para las redes 192.168.29.x hasta 192.168.33.x. Así, los equipos reciben direcciones a partir de la `.21` y quedan libres las primeras para gateways y equipos con IP fija.
 
@@ -104,7 +103,6 @@ Antes de configurar cualquier equipo se definió el plan de direccionamiento. Pr
 8. **Se preparó la imagen de los hosts.** Para los clientes se usó una imagen derivada de *network-multitool* a la que se le instaló **`dhcpcd`**, porque la imagen original no permitía obtener direcciones IPv6 de forma predeterminada. La imagen resultante se publicó en Docker Hub como [`vonoo/dhcp-client`](https://hub.docker.com/r/vonoo/dhcp-client) y puede descargarse con `docker pull vonoo/dhcp-client`.
 
    [![Docker Hub](https://img.shields.io/badge/Docker_Hub-vonoo%2Fdhcp--client-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/vonoo/dhcp-client)
-   <!-- TODO: agregar captura y comandos de la creación de la imagen (Dockerfile o instalación de dhcpcd) -->
 
 9. **Se probó el direccionamiento desde un cliente.** Con todo lo anterior listo, se ejecutó `dhcpcd eth1` en `Cliente-Miami`. Por IPv6, el cliente recibió un Router Advertisement desde `fe80::1` y a partir de él configuró la dirección `2001:db8:100:30:6439:1aa2:2ced:28d8/64`, su ruta conectada y la ruta por defecto vía `fe80::1`. Por IPv4, recibió la oferta del servidor DHCP en `R-Central` (`10.0.28.1`) y obtuvo `192.168.28.21/24` por 86400 segundos (24 horas), con ruta por defecto vía `192.168.28.1`. Que la primera dirección entregada sea la `.21` confirma que las exclusiones del paso 3 funcionan.
 
