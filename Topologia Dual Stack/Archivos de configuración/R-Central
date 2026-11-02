@@ -6,6 +6,8 @@ service timestamps log datetime msec
 no service password-encryption
 !
 hostname R-Central
+banner motd "Vono estuvo aqui :)"
+no ip domain-lookup
 !
 boot-start-marker
 boot-end-marker
