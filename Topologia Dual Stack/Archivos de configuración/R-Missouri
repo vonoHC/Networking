@@ -1,0 +1,88 @@
+! Last configuration change at 05:43:51 UTC Mon Nov 2 2026
+!
+version 15.9
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R-Missouri
+banner motd "Vono estuvo aqui :)"
+no ip domain-lookup
+!
+boot-start-marker
+boot-end-marker
+!
+no aaa new-model
+!
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+ip cef
+ipv6 unicast-routing
+ipv6 cef
+!
+multilink bundle-name authenticated
+!
+redundancy
+!
+interface GigabitEthernet0/0
+ description Conexion a LAN
+ ip address 192.168.31.1 255.255.255.0
+ ip helper-address 10.0.28.5
+ duplex auto
+ speed auto
+ media-type rj45
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:100:33::1/64
+ ipv6 nd managed-config-flag
+ ipv6 dhcp relay destination  2001:DB8:100:37::1
+ ipv6 ospf 1 area 0
+!
+interface GigabitEthernet0/1
+ description Conexion a R-Boston
+ ip address 10.0.28.26 255.255.255.252
+ duplex auto
+ speed auto
+ media-type rj45
+ ipv6 address FE80::2 link-local
+ ipv6 address 2001:DB8:100:42::2/64
+ ipv6 ospf 1 area 0
+!
+interface GigabitEthernet0/2
+ description Conexion a R-California
+ ip address 10.0.28.18 255.255.255.252
+ duplex auto
+ speed auto
+ media-type rj45
+ ipv6 address FE80::2 link-local
+ ipv6 address 2001:DB8:100:40::2/64
+ ipv6 ospf 1 area 0
+!
+interface GigabitEthernet0/3
+ no ip address
+ shutdown
+ duplex auto
+ speed auto
+ media-type rj45
+!
+router ospf 1
+ router-id 6.6.6.6
+ passive-interface GigabitEthernet0/0
+ network 10.0.28.16 0.0.0.3 area 0
+ network 10.0.28.24 0.0.0.3 area 0
+ network 192.168.31.0 0.0.0.255 area 0
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+ipv6 router ospf 1
+ router-id 6.6.6.6
+ passive-interface GigabitEthernet0/0
+!
+ipv6 ioam timestamp
+!
+control-plane
